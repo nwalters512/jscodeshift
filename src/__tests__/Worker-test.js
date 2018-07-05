@@ -58,6 +58,34 @@ describe('Worker API', () => {
     });
   });
 
+  it('passes data back via emitter', done => {
+    const transformPath = createTempFileWith(
+      `module.exports = function (file, api) {
+        api.data('File changed');
+        return api.j(file.source).toSource() + ' changed';
+       }`
+    );
+    const sourcePath = createTempFileWith('const x = 10;');
+
+    const emitter = worker([transformPath]);
+    emitter.send({files: [sourcePath]});
+    let receivedData = false;
+    emitter.addListener('message', data => {
+      if (data.action === 'data') {
+        receivedData = true;
+        expect(data.file).toBe(sourcePath);
+        expect(data.data).toBe('File changed');
+      } else if (data.action === 'status') {
+        expect(receivedData).toBe(true);
+        expect(data.status).toBe('ok');
+        expect(getFileContent(sourcePath)).toBe(
+          'const x = 10;' + ' changed'
+        );
+        done();
+      }
+    });
+  });
+
   describe('custom parser', () => {
     function getTransformForParser(parser) {
       return createTempFileWith(

@@ -126,6 +126,9 @@ function run(data) {
         source = source.toString();
         try {
           const jscodeshift = prepareJscodeshift(options);
+          const reportData = (data) => {
+            notify({action: 'data', file: file, data: data});
+          }
           const out = transform(
             {
               path: file,
@@ -134,7 +137,8 @@ function run(data) {
             {
               j: jscodeshift,
               jscodeshift: jscodeshift,
-              stats: options.dry ? stats : empty
+              stats: options.dry ? stats : empty,
+              data: reportData
             },
             options
           );
